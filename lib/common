@@ -1,0 +1,63 @@
+#!/bin/bash
+set -e
+
+LIB_DIR="/usr/local/lib/nak"
+BIN_DIR="/usr/local/bin"
+DATA_DIR="/var/lib/nak"
+
+CMD_DIR="${LIB_DIR}/cmd"
+MOD_DIR="${LIB_DIR}/mod"
+
+ZONE_DIR="${DATA_DIR}/zones"
+TMP_DIR="${DATA_DIR}/tmp"
+
+CONFIG_FILE="/etc/nak"
+LOG_FILE="/var/log/nak"
+
+COL_R="\e[38;5;196m"
+COL_G="\e[38;5;46m"
+COL_C="\e[38;5;51m"
+COL_P="\e[38;5;201m"
+COL_RESET="\033[0m"
+
+MOD_LIST=()
+for file in "$MOD_DIR"/*; do
+    MOD_LIST+=("$(basename "$file")")
+done
+
+CMD_LIST=()
+for file in "$CMD_DIR"/*; do
+    CMD_LIST+=("$(basename "$file")")
+done
+
+
+get_enabled_modules() {
+    local enabled_list=()
+    for mod in "${MOD_LIST[@]}"; do
+        [[ -z "$mod" ]] && continue
+        varname="$(echo "$mod" | tr '[:lower:]' '[:upper:]')_ENABLED"
+        value="${!varname}"
+        if [[ "$value" == "true" ]]; then
+            enabled_list+=("$mod")
+        fi
+    done
+    ENABLED_MODULES=("${enabled_list[@]}")
+}
+
+# get_enabled_modules
+
+
+load_config() {
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        echo "ERROR: Config file not found: $CONFIG_FILE"
+        echo "Please create it or reinstall the package."
+        exit 1
+    fi
+    source "$CONFIG_FILE"
+}
+
+log() {
+    local msg="[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+    echo "$msg" >> "$LOG_FILE"
+}
+

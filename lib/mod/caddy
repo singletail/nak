@@ -1,0 +1,103 @@
+#!/bin/bash
+
+# user settings
+source /usr/local/lib/nak/common
+load_config
+
+# module settings
+CADDY_IPSET="nak-caddy"
+CADDY_IPSET_TEMP="${CADDY_IPSET}_tmp"
+CADDY_ZONE_FILE="${ZONE_DIR}/caddy.zone"
+
+module_enable() {
+    caddy_load
+    caddy_iptables
+    systemctl start nak-caddy.service
+}
+
+module_status() {
+    if systemctl is-active --quiet nak-caddy.service; then
+        printf "caddy module is enabled and running.\n"
+    else
+        printf "caddy module is disabled or not running.\n"
+    fi
+}
+
+module_reload() {
+    caddy_load
+    caddy_iptables
+    systemctl start nak-caddy.service
+}
+
+module_disable() {
+    echo "Disabling caddy module..."
+    if command -v systemctl >/dev/null 2>&1; then
+        if systemctl list-unit-files | grep -q "^nak-caddy.service"; then
+            if systemctl is-active --quiet nak-caddy.service; then
+                systemctl stop nak-caddy.service
+            fi
+            if systemctl is-enabled --quiet nak-caddy.service; then
+                systemctl disable nak-caddy.service
+            fi
+        fi
+    fi
+
+    mkdir -p "${TMP_DIR}"
+    TMPFILE="${TMP_DIR}/iptables-rules.tmp"
+    > "$TMPFILE"
+    iptables-save > "$TMPFILE"
+    while IFS= read -r line; do
+        [[ "$line" =~ ^-A\ INPUT ]] || continue
+        [[ "$line" =~ -m\ set\ --match-set\ $CADDY_IPSET\ src ]] || continue
+        delete_line="${line/-A/-D}"
+        echo "Deleting rule: $delete_line"
+        iptables $delete_line || true
+    done < "$TMPFILE"
+    rm -f "$TMPFILE"
+    netfilter-persistent save
+    ipset destroy "${CADDY_IPSET}" 2>/dev/null || true
+}
+
+caddy_load() {
+    printf "caddy loading ${CADDY_ZONE_FILE} into ${CADDY_IPSET_TEMP}...\n"
+    ipset destroy "${CADDY_IPSET_TEMP}" 2>/dev/null || true
+    ipset restore < <(
+        echo "create ${CADDY_IPSET_TEMP} hash:net family inet hashsize 8192 maxelem 500000"
+    )
+    awk '
+        !/^#/ && NF {
+            printf "add %s %s\n", "'"${CADDY_IPSET_TEMP}"'", $1
+        }
+    ' "${CADDY_ZONE_FILE}" | ipset restore
+
+    if ! ipset list "${CADDY_IPSET}" &>/dev/null; then
+        printf "caddy creating ipset '${CADDY_IPSET}'.\n"
+        ipset create "${CADDY_IPSET}" hash:net family inet hashsize 8192 maxelem 500000
+    fi
+
+    printf "caddy swapping ${CADDY_IPSET_TEMP} with ${CADDY_IPSET}.\n"
+    ipset swap "${CADDY_IPSET_TEMP}" "${CADDY_IPSET}"
+
+    ENTRIES=$(ipset list "${CADDY_IPSET}" | grep "Number of entries" || echo "unknown")
+    ipset destroy "${CADDY_IPSET_TEMP}"
+    printf "caddy ipset ${CADDY_IPSET} loaded successfully: ${ENTRIES}.\n"
+}
+
+
+caddy_iptables() {
+    if [ "$CADDY_ACTION" == "REJECT" ]; then
+        IPTABLES_ACTION="REJECT"
+    else
+        IPTABLES_ACTION="DROP"
+    fi
+
+    if ! iptables -C INPUT -m set --match-set $CADDY_IPSET src -j $IPTABLES_ACTION 2>/dev/null; then
+        printf "caddy adding iptables rule to $IPTABLES_ACTION traffic from set '$CADDY_IPSET'\n"
+        iptables -I INPUT -m set --match-set $CADDY_IPSET src -j $IPTABLES_ACTION
+    else
+        printf "caddy iptables rule $IPTABLES_ACTION already exists for $CADDY_IPSET. No action taken.\n"
+    fi
+
+    netfilter-persistent save
+}
+

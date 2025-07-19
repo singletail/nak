@@ -1,0 +1,30 @@
+# nak - t@wse.nyc - 1 July 2024
+# /etc/nak
+
+
+#######################################
+# ipdeny settings
+#######################################
+
+IPDENY_ENABLED="true"
+
+# ipdeny uri
+IPDENY_URL="https://www.ipdeny.com/ipblocks/data/countries/all-zones.tar.gz"
+
+# whitelist or blacklist mode
+IPDENY_MODE="whitelist"
+
+# zone codes, e.g. CN RU US
+IPDENY_ZONES="us gb nl as aq au at be ca dk fr de gr is ie it no se ch ua vg vi zz"
+
+# iptables action (REJECT/DROP)
+IPDENY_ACTION="REJECT"
+
+# cron expression for periodic update
+IPDENY_CRON="05 3 * * *"
+
+#######################################
+# caddy settings
+#######################################
+
+CADDY_ENABLED="true"

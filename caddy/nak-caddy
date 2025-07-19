@@ -1,0 +1,43 @@
+#!/bin/bash
+# Tails Caddy log file and blocks IPs that generate alerts, with logging and whitelisting
+
+DATA_DIR="/var/lib/nak"
+ZONE_DIR="${DATA_DIR}/zones"
+ZONE_FILE="${ZONE_DIR}/caddy.zone"
+NAK_LOG="/var/log/nak"
+CADDY_LOG="/var/log/caddy/nak.log"
+
+# Add your own whitelisted IPs here (no /32 needed)
+WHITELIST=("127.0.0.1")
+
+mkdir -p "$ZONE_DIR"
+
+echo "nak-caddy started" >&2
+
+tail -F "$CADDY_LOG" | while read -r line; do
+    # Extract fields
+    remote_ip=$(echo "$line" | sed -n 's/.*"remote_ip":"\([^"]*\)".*/\1/p')
+    x_nak=$(echo "$line" | sed -n 's/.*"X-Nak":\["\([^"]*\)"\].*/\1/p')
+    uri=$(echo "$line" | sed -n 's/.*"uri":"\([^"]*\)".*/\1/p')
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+
+    # Skip if IP is empty or in whitelist
+    if [[ -z "$remote_ip" ]]; then
+        continue
+    fi
+    for ip in "${WHITELIST[@]}"; do
+        if [[ "$remote_ip" == "$ip" ]]; then
+            echo "$timestamp [SKIP] Whitelisted IP: $remote_ip" >> "$NAK_LOG"
+            continue 2
+        fi
+    done
+
+    echo "$timestamp $remote_ip $x_nak $uri" >> "$NAK_LOG"
+    echo "Blocking $remote_ip/32" >&2
+
+    # Save to zone file
+    echo "$remote_ip/32" >> "$ZONE_FILE"
+
+    # Add to ipset
+    ipset add nak-caddy "$remote_ip/32" -exist
+done

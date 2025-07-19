@@ -1,0 +1,10 @@
+#!/bin/bash
+
+source /usr/local/lib/nak/common
+load_config
+get_enabled_modules
+
+for mod in "${ENABLED_MODULES[@]}"; do
+    source "/usr/local/lib/nak/mod/${mod}"
+    module_enable
+done

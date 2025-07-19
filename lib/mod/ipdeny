@@ -1,0 +1,173 @@
+#!/bin/bash
+
+# To do:
+# add/remove cron job
+# add/remove boot script
+
+
+# user settings
+source /usr/local/lib/nak/common
+load_config
+
+# module settings
+IPDENY_IPSET="nak-ipdeny"
+IPDENY_IPSET_TEMP="${IPDENY_IPSET}_tmp"
+IPDENY_ZONE_FILE="${ZONE_DIR}/ipdeny.zone"
+
+
+## public methods
+
+module_reload() {
+    ipdeny_fetch
+    ipdeny_compile
+    ipdeny_load
+    ipdeny_iptables
+    ipdeny_add_cron
+}
+
+module_enable() {
+    if [ ! -f "$IPDENY_ZONE_FILE" ]; then
+        printf "ipdeny zone file not found.\n"
+        ipdeny_fetch
+        ipdeny_compile
+    fi
+    ipdeny_load
+    ipdeny_iptables
+    ipdeny_add_cron
+}
+
+module_disable() {
+    mkdir -p "${TMP_DIR}"
+    TMPFILE="${TMP_DIR}/iptables-rules.tmp"
+    > "$TMPFILE"
+    iptables-save > "$TMPFILE"
+    while IFS= read -r line; do
+        [[ "$line" =~ ^-A\ INPUT ]] || continue
+        [[ "$line" =~ -m\ set\ --match-set\ $IPDENY_IPSET\ src ]] || continue
+        delete_line="${line/-A/-D}"
+        echo "Deleting rule: $delete_line"
+        iptables $delete_line || true
+    done < "$TMPFILE"
+    rm -f "$TMPFILE"
+    netfilter-persistent save
+    ipset destroy "${IPDENY_IPSET}" 2>/dev/null || true
+    ipdeny_remove_cron
+}
+
+##
+
+ipdeny_fetch() {
+    printf "Fetching IP deny list from %s...\n" "$IPDENY_URL"
+    mkdir -p "${TMP_DIR}"
+    rm -rf "${TMP_DIR:?}"/*
+    curl --http1.1 -sSL "$IPDENY_URL" -o "$TMP_DIR/all-zones.tar.gz"
+    tar -xzf "$TMP_DIR/all-zones.tar.gz" -C "$TMP_DIR"
+}
+
+ipdeny_compile() {
+    printf "ipdeny compiling IP deny list into ${IPDENY_ZONE_FILE}.\n"
+    > "${IPDENY_ZONE_FILE}"
+    if [ "$IPDENY_MODE" == "whitelist" ]; then
+        printf "Remving whitelisted zones: "
+        for zone in $IPDENY_ZONES; do
+            printf "$zone "
+            rm -f "${TMP_DIR}/${zone}.zone"
+        done
+        cat "${TMP_DIR}"/*.zone >> "${IPDENY_ZONE_FILE}"
+    else
+        printf "Compiling blacklisted zones: "
+        for zone in $IPDENY_ZONES; do
+            printf "$zone "
+            cat "${TMP_DIR}/${zone}.zone" >> "${IPDENY_ZONE_FILE}"
+        done
+    fi
+    rm -rf "${TMP_DIR}"
+    printf "\nipdeny compiled IP deny list into ${IPDENY_ZONE_FILE}.\n"
+}
+
+ipdeny_load() {
+    printf "ipdeny loading ${IPDENY_ZONE_FILE} into ${IPDENY_IPSET_TEMP}...\n"
+    ipset destroy "${IPDENY_IPSET_TEMP}" 2>/dev/null || true
+    ipset restore < <(
+        echo "create ${IPDENY_IPSET_TEMP} hash:net family inet hashsize 8192 maxelem 500000"
+    )
+    awk '
+        !/^#/ && NF {
+            printf "add %s %s\n", "'"${IPDENY_IPSET_TEMP}"'", $1
+        }
+    ' "${IPDENY_ZONE_FILE}" | ipset restore
+
+    if ! ipset list "${IPDENY_IPSET}" &>/dev/null; then
+        printf "ipdeny creating ipset '${IPDENY_IPSET}'.\n"
+        ipset create "${IPDENY_IPSET}" hash:net family inet hashsize 8192 maxelem 500000
+    fi
+
+    printf "ipdeny swapping ${IPDENY_IPSET_TEMP} with ${IPDENY_IPSET}.\n"
+    ipset swap "${IPDENY_IPSET_TEMP}" "${IPDENY_IPSET}"
+
+    ENTRIES=$(ipset list "${IPDENY_IPSET}" | grep "Number of entries" || echo "unknown")
+    ipset destroy "${IPDENY_IPSET_TEMP}"
+    printf "ipdeny ipset ${IPDENY_IPSET} loaded successfully: ${ENTRIES}.\n"
+}
+
+ipdeny_iptables() {
+    if [ "$IPDENY_ACTION" == "REJECT" ]; then
+        IPTABLES_ACTION="REJECT"
+    else
+        IPTABLES_ACTION="DROP"
+    fi
+
+    if ! iptables -C INPUT -m set --match-set $IPDENY_IPSET src -j $IPTABLES_ACTION 2>/dev/null; then
+        printf "ipdeny adding iptables rule to $IPTABLES_ACTION traffic from set '$IPDENY_IPSET'\n"
+        iptables -I INPUT -m set --match-set $IPDENY_IPSET src -j $IPTABLES_ACTION
+    else
+        printf "ipdeny iptables rule $IPTABLES_ACTION already exists for $IPDENY_IPSET. No action taken.\n"
+    fi
+
+    netfilter-persistent save
+}
+
+ipdeny_add_cron() {
+    if [ ! -f /etc/cron.d/nak ]; then
+        echo "0 3 * * 1 root /usr/local/bin/nak reload" > /etc/cron.d/nak
+    fi
+}
+
+ipdeny_remove_cron() {
+    if [ -f /etc/cron.d/nak ]; then
+        rm -f /etc/cron.d/nak
+    fi
+}
+
+module_status() {
+    local mod_ok="true"
+    printf "${COL_P}ipdeny: ${COL_RESET} "
+    if [ -f "$IPDENY_ZONE_FILE" ]; then
+        printf "${COL_G}zone file $IPDENY_ZONE_FILE OK.${COL_RESET} "
+    else
+        printf "${COL_R}zone file $IPDENY_ZONE_FILE missing.${COL_RESET} "
+        mod_ok="false"
+    fi
+
+    if ipset list $IPDENY_IPSET &>/dev/null; then
+        printf "${COL_G}ipset $IPDENY_IPSET OK. "
+        ENTRIES=$(ipset list $IPDENY_IPSET | grep "Number of entries" || echo "unknown")
+        printf "entries: $ENTRIES. ${COL_RESET}"
+    else
+        printf "${COL_R}ipset $IPDENY_IPSET not found.${COL_RESET} "
+        mod_ok="false"
+    fi
+
+    if iptables -C INPUT -m set --match-set $IPDENY_IPSET src -j DROP 2>/dev/null; then
+        printf "${COL_G}iptables rule OK.${COL_RESET} "
+    else
+        printf "${COL_R}iptables rule missing.${COL_RESET} "
+        mod_ok="false"
+    fi
+    printf "\n"
+    if [ "$mod_ok" == "true" ]; then
+        printf "${COL_G}ipdeny module is enabled and functioning properly.${COL_RESET}\n"
+    else
+        printf "run ${COL_C}sudo nak enable${COL_RESET}.\n"
+    fi
+}

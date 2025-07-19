@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+
+SUBCOMMAND="$1"
+shift || true
+
+source /usr/local/lib/nak/common
+load_config
+
+if [[ -z "$SUBCOMMAND" ]]; then
+    echo "Usage: nak <command> [options]"
+    echo "Available commands: ${CMD_LIST[*]}"
+    exit 1
+fi
+
+if [[ -x "${CMD_DIR}/${SUBCOMMAND}" ]]; then
+    exec "${CMD_DIR}/${SUBCOMMAND}" "$@"
+else
+    echo "Unknown command: $SUBCOMMAND"
+    exit 1
+fi

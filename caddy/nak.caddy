@@ -1,0 +1,176 @@
+(nak) {
+    log naklog {
+		output file /var/log/caddy/nak.log
+		format json
+	}
+
+    @nakWordpress path_regexp ^/(wp[^/]*|wordpress)(/.*)?$
+    @nakPHP path_regexp \.php(?:$|\?)
+    @nakPHPInfo path_regexp (?i)phpinfo
+    @nakTraversal path_regexp \.\./
+    @nakDotfile path_regexp ^/\..+
+    @nakDoubleSlash path_regexp //+
+    @nakMetadata path_regexp ^/169\.254\.(169\.254|170\.2)/latest/
+    @nakAccessLog path_regexp access\.log($|\?)
+    @nakActuator path_regexp ^/actuator(/.*)?$
+    @nakAdmin path_regexp ^/admin(/.*)?$
+    @nakAdministrator path_regexp ^/administrator(/.*)?$
+    @nakApi path_regexp ^/api(/.*)?$
+    @nakApigateway path_regexp ^/api-gateway(/.*)?$
+    @nakAWS path_regexp (?i)^/aws([-/].+|\..+)$
+    @nakBackend path_regexp ^/backend(/.*)?$
+    @nakBackup path_regexp ^/backup(/.*)?$
+    @nakBeta path_regexp ^/beta(/.*)?$
+    @nakBootstrap path_regexp ^/bootstrap(/.*)?$
+    @nakCerts path_regexp ^/certs(/.*)?$
+    @nakCloud path_regexp ^/cloud(/.*)?$
+    @nakConfig path_regexp ^/config(/.*)?$
+    @nakCore path_regexp ^/core(/.*)?$
+    @nakDocker path_regexp ^/docker(/.*)?$
+    @nakGraphql path_regexp ^/graphql(/.*)?$
+    @nakHidden path_regexp ^/hidden(/.*)?$
+    @nakOld path_regexp ^/old(/.*)?$
+    @nakTest path_regexp ^/test(/.*)?$
+    @nakWiki path_regexp ^/wiki(/.*)?$
+
+    handle @nakWordpress {
+        log_name naklog
+        header X-Nak wp
+        error "wp" 403
+    }
+    handle @nakPHP {
+        log_name naklog
+        header X-Nak php
+        error 403
+    }
+    handle @nakPHPInfo {
+        log_name naklog
+        header X-Nak phpinfo
+        error 403
+    }
+    handle @nakTraversal {
+        log_name naklog
+        header X-Nak traversal
+        error 403
+    }
+    handle @nakDotfile {
+        log_name naklog
+        header X-Nak dot
+        error 403
+    }
+    handle @nakDoubleSlash {
+        log_name naklog
+        header X-Nak doubleslash
+        error 403
+    }
+    handle @nakMetadata {
+        log_name naklog
+        header X-Nak metadata
+        error 403
+    }
+    handle @nakAccessLog {
+        log_name naklog
+        header X-Nak accesslog
+        error 403
+    }
+    handle @nakActuator {
+        log_name naklog
+        header X-Nak actuator
+        error 403
+    }
+    handle @nakAdmin {
+        log_name naklog
+        header X-Nak admin
+        error 403
+    }
+    handle @nakAdministrator {
+        log_name naklog
+        header X-Nak administrator
+        error 403
+    }
+    handle @nakApi {
+        log_name naklog
+        header X-Nak api
+        error 403
+    }
+    handle @nakApigateway {
+        log_name naklog
+        header X-Nak apigateway
+        error 403
+    }
+    handle @nakAWS {
+        log_name naklog
+        header X-Nak aws
+        error 403
+    }
+    handle @nakBackend {
+        log_name naklog
+        header X-Nak backend
+        error 403
+    }
+    handle @nakBackup {
+        log_name naklog
+        header X-Nak backup
+        error 403
+    }
+    handle @nakBeta {
+        log_name naklog
+        header X-Nak beta
+        error 403
+    }
+    handle @nakBootstrap {
+        log_name naklog
+        header X-Nak bootstrap
+        error 403
+    }
+    handle @nakCerts {
+        log_name naklog
+        header X-Nak certs
+        error 403
+    }
+    handle @nakCloud {
+        log_name naklog
+        header X-Nak cloud
+        error 403
+    }
+    handle @nakConfig {
+        log_name naklog
+        header X-Nak config
+        error 403
+    }
+    handle @nakCore {
+        log_name naklog
+        header X-Nak core
+        error 403
+    }
+    handle @nakDocker {
+        log_name naklog
+        header X-Nak docker
+        error 403
+    }
+    handle @nakGraphql {
+        log_name naklog
+        header X-Nak graphql
+        error 403
+    }
+    handle @nakHidden {
+        log_name naklog
+        header X-Nak hidden
+        error 403
+    }
+    handle @nakOld {
+        log_name naklog
+        header X-Nak old
+        error 403
+    }
+    handle @nakTest {
+        log_name naklog
+        header X-Nak test
+        error 403
+    }
+    handle @nakWiki {
+        log_name naklog
+        header X-Nak wiki
+        error 403
+    }
+}

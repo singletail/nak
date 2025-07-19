@@ -1,0 +1,19 @@
+# /etc/systemd/system/nak-caddy.service
+
+[Unit]
+Description=Overzealous bot control
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/lib/nak/nak-caddy
+Restart=on-failure
+RestartSec=5
+User=root
+
+# logs to journald by default. Uncomment to log to files:
+# StandardOutput=append:/var/log/nak-caddy.log
+# StandardError=append:/var/log/nak-caddy.err
+
+[Install]
+WantedBy=multi-user.target
