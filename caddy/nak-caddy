@@ -19,6 +19,12 @@ tail -F "$CADDY_LOG" | while read -r line; do
     remote_ip=$(echo "$line" | sed -n 's/.*"remote_ip":"\([^"]*\)".*/\1/p')
     x_nak=$(echo "$line" | sed -n 's/.*"X-Nak":\["\([^"]*\)"\].*/\1/p')
     uri=$(echo "$line" | sed -n 's/.*"uri":"\([^"]*\)".*/\1/p')
+
+    # Skip if status is 308 (redirect)
+    if echo "$line" | grep -q '"status":308'; then
+        continue
+    fi
+
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
 
     # Skip if IP is empty or in whitelist

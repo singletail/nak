@@ -1,14 +1,21 @@
-(nak) {
+(log-nak) {
     log naklog {
 		output file /var/log/caddy/nak.log
 		format json
 	}
+}
+(nak) {
+    import log-nak
+    
+    @nakDotfileExceptAcme {
+        path_regexp ^/\..+
+        not path /.well-known/acme-challenge/*
+    }
 
     @nakWordpress path_regexp ^/(wp[^/]*|wordpress)(/.*)?$
     @nakPHP path_regexp \.php(?:$|\?)
     @nakPHPInfo path_regexp (?i)phpinfo
     @nakTraversal path_regexp \.\./
-    @nakDotfile path_regexp ^/\..+
     @nakDoubleSlash path_regexp //+
     @nakMetadata path_regexp ^/169\.254\.(169\.254|170\.2)/latest/
     @nakAccessLog path_regexp access\.log($|\?)
@@ -53,7 +60,7 @@
         header X-Nak traversal
         error 403
     }
-    handle @nakDotfile {
+    handle @nakDotfileExceptAcme {
         log_name naklog
         header X-Nak dot
         error 403

@@ -183,4 +183,6 @@ install_caddy
 
 printf "${COL_G}Installation complete!${COL_RESET}\n"
 printf "You can now run ${COL_C}nak enable${COL_RESET} to enable modules.\n"
+printf "It's probably a good idea to whitelist yourself in /usr/local/lib/nak/nak-caddy\n"
+printf "This will be moved to /etc eventually. \n"
 printf "For help, run ${COL_C}nak help${COL_RESET}.\n"
