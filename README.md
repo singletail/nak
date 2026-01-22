@@ -70,3 +70,9 @@ grep -o '"uri":"[^"]*"' "/var/log/caddy/nak.log" | sed 's/.*"uri":"\([^"]*\)".*/
 - Make sure caddy can write to /var/log/caddy/nak.log
 - See the enclosed Caddyfile.sample for directives
 
+
+## quick summary of entries in ipsets
+
+```bash
+sudo ipset list -t
+```

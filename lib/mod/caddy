@@ -62,7 +62,7 @@ caddy_load() {
     printf "caddy loading ${CADDY_ZONE_FILE} into ${CADDY_IPSET_TEMP}...\n"
     ipset destroy "${CADDY_IPSET_TEMP}" 2>/dev/null || true
     ipset restore < <(
-        echo "create ${CADDY_IPSET_TEMP} hash:net family inet hashsize 8192 maxelem 500000"
+        echo "create ${CADDY_IPSET_TEMP} hash:net family inet hashsize 65536 maxelem 500000"
     )
     awk '
         !/^#/ && NF {
@@ -72,7 +72,7 @@ caddy_load() {
 
     if ! ipset list "${CADDY_IPSET}" &>/dev/null; then
         printf "caddy creating ipset '${CADDY_IPSET}'.\n"
-        ipset create "${CADDY_IPSET}" hash:net family inet hashsize 8192 maxelem 500000
+        ipset create "${CADDY_IPSET}" hash:net family inet hashsize 65536 maxelem 500000
     fi
 
     printf "caddy swapping ${CADDY_IPSET_TEMP} with ${CADDY_IPSET}.\n"

@@ -89,7 +89,7 @@ ipdeny_load() {
     printf "ipdeny loading ${IPDENY_ZONE_FILE} into ${IPDENY_IPSET_TEMP}...\n"
     ipset destroy "${IPDENY_IPSET_TEMP}" 2>/dev/null || true
     ipset restore < <(
-        echo "create ${IPDENY_IPSET_TEMP} hash:net family inet hashsize 8192 maxelem 500000"
+        echo "create ${IPDENY_IPSET_TEMP} hash:net family inet hashsize 131072 maxelem 500000"
     )
     awk '
         !/^#/ && NF {
@@ -99,7 +99,7 @@ ipdeny_load() {
 
     if ! ipset list "${IPDENY_IPSET}" &>/dev/null; then
         printf "ipdeny creating ipset '${IPDENY_IPSET}'.\n"
-        ipset create "${IPDENY_IPSET}" hash:net family inet hashsize 8192 maxelem 500000
+        ipset create "${IPDENY_IPSET}" hash:net family inet hashsize 131072 maxelem 500000
     fi
 
     printf "ipdeny swapping ${IPDENY_IPSET_TEMP} with ${IPDENY_IPSET}.\n"
