@@ -95,7 +95,7 @@ ipdeny_load() {
         !/^#/ && NF {
             printf "add %s %s\n", "'"${IPDENY_IPSET_TEMP}"'", $1
         }
-    ' "${IPDENY_ZONE_FILE}" | ipset restore
+    ' "${IPDENY_ZONE_FILE}" | ipset restore -exist
 
     if ! ipset list "${IPDENY_IPSET}" &>/dev/null; then
         printf "ipdeny creating ipset '${IPDENY_IPSET}'.\n"

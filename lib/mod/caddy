@@ -68,7 +68,7 @@ caddy_load() {
         !/^#/ && NF {
             printf "add %s %s\n", "'"${CADDY_IPSET_TEMP}"'", $1
         }
-    ' "${CADDY_ZONE_FILE}" | ipset restore
+    ' "${CADDY_ZONE_FILE}" | ipset restore -exist
 
     if ! ipset list "${CADDY_IPSET}" &>/dev/null; then
         printf "caddy creating ipset '${CADDY_IPSET}'.\n"
