@@ -141,6 +141,13 @@ ipdeny_remove_cron() {
 
 module_status() {
     local mod_ok="true"
+
+    if [ "$IPDENY_ACTION" == "REJECT" ]; then
+        IPTABLES_ACTION="REJECT"
+    else
+        IPTABLES_ACTION="DROP"
+    fi
+
     printf "${COL_P}ipdeny: ${COL_RESET} "
     if [ -f "$IPDENY_ZONE_FILE" ]; then
         printf "${COL_G}zone file $IPDENY_ZONE_FILE OK.${COL_RESET} "
@@ -158,7 +165,7 @@ module_status() {
         mod_ok="false"
     fi
 
-    if iptables -C INPUT -m set --match-set $IPDENY_IPSET src -j DROP 2>/dev/null; then
+    if iptables -C INPUT -m set --match-set $IPDENY_IPSET src -j $IPTABLES_ACTION 2>/dev/null; then
         printf "${COL_G}iptables rule OK.${COL_RESET} "
     else
         printf "${COL_R}iptables rule missing.${COL_RESET} "

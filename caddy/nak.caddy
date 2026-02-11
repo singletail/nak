@@ -20,7 +20,6 @@
     @nakMetadata path_regexp ^/169\.254\.(169\.254|170\.2)/latest/
     @nakAccessLog path_regexp access\.log($|\?)
     @nakActuator path_regexp ^/actuator(/.*)?$
-    @nakAdmin path_regexp ^/admin(/.*)?$
     @nakAdministrator path_regexp ^/administrator(/.*)?$
     @nakApi path_regexp ^/api(/.*)?$
     @nakApigateway path_regexp ^/api-gateway(/.*)?$
@@ -83,11 +82,6 @@
     handle @nakActuator {
         log_name naklog
         header X-Nak actuator
-        error 403
-    }
-    handle @nakAdmin {
-        log_name naklog
-        header X-Nak admin
         error 403
     }
     handle @nakAdministrator {
