@@ -181,8 +181,23 @@ install_caddy() {
 
 install_caddy
 
+install_service() {
+    printf "Installing nak.service...                            "
+    cp $SCRIPT_DIR/nak.service /etc/systemd/system/nak.service
+    systemctl daemon-reload
+    systemctl enable nak.service
+    if systemctl is-enabled --quiet nak.service; then
+        printf "${COL_G}✔${COL_RESET}\n"
+        log "install.sh: Installed and enabled nak.service"
+    else
+        printf "${COL_R}✘${COL_RESET}\n"
+        log "install.sh: Failed to enable nak.service"
+    fi
+}
+
+install_service
+
 printf "${COL_G}Installation complete!${COL_RESET}\n"
 printf "You can now run ${COL_C}nak enable${COL_RESET} to enable modules.\n"
 printf "It's probably a good idea to whitelist yourself in /usr/local/lib/nak/nak-caddy\n"
-printf "This will be moved to /etc eventually. \n"
 printf "For help, run ${COL_C}nak help${COL_RESET}.\n"

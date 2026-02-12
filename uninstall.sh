@@ -15,6 +15,10 @@ nak disable
 
 rm -rf "$LIB_DIR" "${BIN_DIR}/nak" "$DATA_DIR" "$LOG_FILE" "$CONFIG_FILE"
 rm -rf /etc/systemd/system/nak-caddy.service
+if systemctl is-enabled --quiet nak.service 2>/dev/null; then
+    systemctl disable nak.service
+fi
+rm -rf /etc/systemd/system/nak.service
 systemctl daemon-reload
 
 printf "${COL_G}Uninstallation complete!${COL_RESET}\n"

@@ -1,0 +1,15 @@
+# /etc/systemd/system/nak.service
+
+[Unit]
+Description=NAK - Active defense ipset and iptables setup
+After=network.target
+Before=nak-caddy.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/nak enable
+ExecStop=/usr/local/bin/nak disable
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
