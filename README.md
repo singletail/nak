@@ -50,7 +50,7 @@ sudo journalctl -u nak-caddy --no-pager -f
 ## To troubleshoot by watching caddy logs:
 
 ```zsh
-sudo journalctl -u caddy -n 50 --no-pager -f
+sudo journalctl -u caddy -n 100 --no-pager -f
 ```
 
 ## To see what's in the current ipset
@@ -64,6 +64,10 @@ ipset list nak-caddy
 ```zsh
 grep -o '"uri":"[^"]*"' "/var/log/caddy/nak.log" | sed 's/.*"uri":"\([^"]*\)".*/\1/' > "/var/log/caddy/nak_uris"
 ```
+
+## to remove a blacklisted ip
+
+- Remove the address from /usr/local/lib/nak/nak-caddy
 
 ## To get caddy working:
 

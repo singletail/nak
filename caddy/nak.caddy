@@ -9,7 +9,7 @@
     
     @nakDotfileExceptAcme {
         path_regexp ^/\..+
-        not path /.well-known/acme-challenge/*
+        not path /.well-known/*
     }
 
     @nakWordpress path_regexp ^/(wp[^/]*|wordpress)(/.*)?$
